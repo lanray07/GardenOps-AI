@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "GardenOps AI",
+    "slug": "gardenops-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "gardenopsai",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GardenOps AI uses your selected plant photo to preview plant scanner results."
+        }
+      ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gardenopsai.app",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "GardenOps AI uses your selected plant photo to preview plant scanner results."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cceffd09-43bb-4260-9f2c-568c05680c98"
+      }
+    },
+    "owner": "lanray"
+  }
+}
