@@ -11,6 +11,9 @@ expo-env.d.ts
 app-store/
 
 # Native
+credentials/
+credentials.json
+credentials*.json
 .kotlin/
 *.orig.*
 *.jks
