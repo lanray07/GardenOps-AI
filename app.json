@@ -24,7 +24,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gardenopsai.app",
-      "buildNumber": "1.0.1",
+      "buildNumber": "1.0.2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "GardenOps AI uses your selected plant photo to preview plant scanner results."
