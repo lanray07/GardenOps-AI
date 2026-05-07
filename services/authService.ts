@@ -54,9 +54,3 @@ export async function signOutFirebaseAccount() {
 
   await signOut(firebaseAuth);
 }
-
-export function getEmailAuthPlaceholderMessage() {
-  return canUseFirebaseAuth()
-    ? 'Email sign-in UI is ready to connect once Email/Password Auth is enabled in Firebase.'
-    : 'Add Firebase environment values before connecting email sign-in.';
-}

@@ -9,7 +9,6 @@ import {
 } from 'react';
 
 import { mockTasks } from '../data/tasks';
-import { FREE_PLAN_LIMIT } from '../monetisation';
 import {
   canUseFirebaseAuth,
   listenToAuthState,
@@ -226,8 +225,10 @@ export function GardenProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isPremium = subscriptionStatus === 'Premium';
-  const remainingFreePlans = Math.max(FREE_PLAN_LIMIT - aiPlansGenerated, 0);
-  const canGenerateAIPlan = isPremium || remainingFreePlans > 0;
+  const remainingFreePlans = 0;
+  // App Store review build: all mock MVP planning tools are free to use.
+  // TODO: Reintroduce plan limits only after Apple In-App Purchases are live.
+  const canGenerateAIPlan = true;
 
   const value = useMemo(
     () => ({

@@ -3,13 +3,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
 import { FormField } from '../components/FormField';
-import { PremiumBadge } from '../components/PremiumBadge';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { SectionTitle } from '../components/SectionTitle';
 import { useGarden } from '../context/GardenContext';
-import { FREE_PLAN_LIMIT } from '../monetisation';
 import { generateGardenPlan, getPlannerModeLabel } from '../services/aiPlanner';
 import { colors } from '../theme/colors';
 import { AIPlannerResult, SunlightLevel } from '../types';
@@ -20,10 +18,8 @@ export function PlannerScreen() {
   const {
     aiPlansGenerated,
     canGenerateAIPlan,
-    isPremium,
     latestPlan,
     profile,
-    remainingFreePlans,
     saveGeneratedPlan,
   } = useGarden();
   const [gardenSize, setGardenSize] = useState(
@@ -75,29 +71,17 @@ export function PlannerScreen() {
       />
 
       <Card style={styles.formCard}>
-        <View style={styles.premiumRow}>
-          <PremiumBadge label="Unlimited AI plans" />
-          <Text style={styles.limit}>
-            {isPremium
-              ? 'Premium demo: unlimited plans'
-              : `Free plan: ${remainingFreePlans}/${FREE_PLAN_LIMIT} remaining`}
-          </Text>
-        </View>
-
         <View style={styles.modeBox}>
           <Text style={styles.modeLabel}>Planner mode</Text>
           <Text style={styles.modeValue}>{getPlannerModeLabel()}</Text>
+          <Text style={styles.modeNote}>
+            Free MVP preview: generate as many mock plans as needed during review.
+          </Text>
         </View>
 
-        {!canGenerateAIPlan ? (
-          <View style={styles.limitBox}>
-            <Text style={styles.limitTitle}>Free plan used</Text>
-            <Text style={styles.limitCopy}>
-              You have generated {aiPlansGenerated} mock AI plan. Enable Premium
-              in Settings to keep generating plans during demos.
-            </Text>
-          </View>
-        ) : null}
+        <Text style={styles.limit}>
+          Mock AI plans generated in this install: {aiPlansGenerated}
+        </Text>
 
         <FormField
           keyboardType="numeric"
@@ -144,7 +128,7 @@ export function PlannerScreen() {
           icon="sparkles-outline"
           loading={isLoading}
           onPress={handleGeneratePlan}
-          title={canGenerateAIPlan ? 'Generate Plan' : 'Premium required'}
+          title="Generate Plan"
         />
       </Card>
 
@@ -197,34 +181,10 @@ const styles = StyleSheet.create({
   formCard: {
     gap: 16,
   },
-  premiumRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
   limit: {
     color: colors.muted,
     fontSize: 13,
     fontWeight: '600',
-  },
-  limitBox: {
-    backgroundColor: '#FFF6DE',
-    borderColor: '#F4D89A',
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 5,
-    padding: 12,
-  },
-  limitTitle: {
-    color: colors.primaryDark,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  limitCopy: {
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 19,
   },
   modeBox: {
     backgroundColor: colors.primarySoft,
@@ -241,6 +201,11 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: 15,
     fontWeight: '900',
+  },
+  modeNote: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 18,
   },
   group: {
     gap: 8,

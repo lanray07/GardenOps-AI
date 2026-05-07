@@ -1,18 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
-import { PremiumBadge } from '../components/PremiumBadge';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
 import { useGarden } from '../context/GardenContext';
 import { cropProfitData } from '../data/crops';
-import { MONTHLY_PRICE, PREMIUM_FEATURES, YEARLY_PRICE } from '../monetisation';
-import { getEmailAuthPlaceholderMessage } from '../services/authService';
 import { exportGardenData } from '../services/exportGardenData';
-import { hasFirebaseConfig } from '../services/firebase';
 import { colors } from '../theme/colors';
 import { AuthStatus, SyncStatus } from '../types';
 
@@ -20,15 +16,9 @@ export function SettingsScreen() {
   const {
     aiPlansGenerated,
     authStatus,
-    authUser,
-    isPremium,
     latestPlan,
     profile,
-    remainingFreePlans,
     resetGarden,
-    setSubscriptionStatus,
-    signInDemoAccount,
-    signOutAccount,
     subscriptionStatus,
     syncStatus,
     tasks,
@@ -36,8 +26,6 @@ export function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
-  const [authMessage, setAuthMessage] = useState<string | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   async function handleExportData() {
     setIsExporting(true);
@@ -72,39 +60,11 @@ export function SettingsScreen() {
     setResetMessage('Demo data cleared. The app will return to onboarding.');
   }
 
-  async function handleDemoSignIn() {
-    setIsAuthLoading(true);
-    setAuthMessage(null);
-
-    try {
-      await signInDemoAccount();
-      setAuthMessage('Signed in with Firebase demo sync.');
-    } catch {
-      setAuthMessage('Firebase sign-in failed. Check Auth setup and env values.');
-    } finally {
-      setIsAuthLoading(false);
-    }
-  }
-
-  async function handleSignOut() {
-    setIsAuthLoading(true);
-    setAuthMessage(null);
-
-    try {
-      await signOutAccount();
-      setAuthMessage('Signed out. GardenOps AI is back in local demo mode.');
-    } catch {
-      setAuthMessage('Sign out failed. Please try again.');
-    } finally {
-      setIsAuthLoading(false);
-    }
-  }
-
   return (
     <Screen>
       <SectionTitle
         title="Settings"
-        subtitle="Account, subscription, data export, and launch integrations."
+        subtitle="Account mode, data export, and launch integrations."
       />
 
       <Card style={styles.accountCard}>
@@ -114,52 +74,15 @@ export function SettingsScreen() {
             <Text style={styles.status}>{authStatusLabel[authStatus]}</Text>
           </View>
           <Ionicons
-            name={authUser ? 'person-circle-outline' : 'person-outline'}
-            color={authUser ? colors.primary : colors.muted}
+            name="person-outline"
+            color={colors.primary}
             size={28}
           />
         </View>
         <Text style={styles.muted}>
-          {authUser
-            ? `Firebase user: ${authUser.isAnonymous ? 'anonymous demo account' : authUser.email ?? authUser.uid}`
-            : hasFirebaseConfig
-              ? 'Use Firebase demo sync to test Auth and Firestore without building full sign-in yet.'
-              : 'Add Firebase environment values to enable Auth and Firestore sync.'}
+          No sign-in is required in this App Store review build. Garden data is
+          saved locally on the device, and Firebase remains a future integration.
         </Text>
-        <View style={styles.authActions}>
-          {authUser ? (
-            <PrimaryButton
-              icon="log-out-outline"
-              loading={isAuthLoading}
-              onPress={handleSignOut}
-              title="Sign out"
-              variant="secondary"
-            />
-          ) : (
-            <PrimaryButton
-              disabled={!hasFirebaseConfig}
-              icon="person-add-outline"
-              loading={isAuthLoading}
-              onPress={handleDemoSignIn}
-              title="Continue with Firebase demo sync"
-              variant="secondary"
-            />
-          )}
-        </View>
-        <View style={styles.emailPlaceholder}>
-          <Text style={styles.actionTitle}>Email sign-in</Text>
-          <Text style={styles.actionText}>{getEmailAuthPlaceholderMessage()}</Text>
-        </View>
-        {authMessage ? (
-          <Text
-            style={[
-              styles.authMessage,
-              authMessage.includes('failed') && styles.authError,
-            ]}
-          >
-            {authMessage}
-          </Text>
-        ) : null}
       </Card>
 
       <Card style={styles.syncCard}>
@@ -180,50 +103,24 @@ export function SettingsScreen() {
       <Card style={styles.subscriptionCard}>
         <View style={styles.subscriptionTop}>
           <View>
-            <Text style={styles.label}>Subscription status</Text>
-            <Text style={styles.status}>{subscriptionStatus} plan</Text>
+            <Text style={styles.label}>Launch access</Text>
+            <Text style={styles.status}>Free MVP</Text>
           </View>
-          <Ionicons name="sparkles-outline" color={colors.amber} size={28} />
+          <Ionicons name="checkmark-circle-outline" color={colors.primary} size={28} />
         </View>
         <Text style={styles.muted}>
-          Premium placeholder: {MONTHLY_PRICE}/month or {YEARLY_PRICE}/year.
+          This review build is free. All mock planning, task, scanner, and profit
+          tools are available without purchase.
         </Text>
         <View style={styles.planUsage}>
           <Text style={styles.usageLabel}>AI plans generated</Text>
           <Text style={styles.usageValue}>
-            {aiPlansGenerated} used -{' '}
-            {isPremium ? 'unlimited remaining' : `${remainingFreePlans} free remaining`}
+            {aiPlansGenerated} generated in this install
           </Text>
-        </View>
-        <View style={styles.toggleRow}>
-          <View style={styles.flex}>
-            <Text style={styles.actionTitle}>Premium demo access</Text>
-            <Text style={styles.actionText}>
-              Toggle this locally until Apple In-App Purchases are connected.
-            </Text>
-          </View>
-          <Switch
-            onValueChange={(enabled) =>
-              setSubscriptionStatus(enabled ? 'Premium' : 'Free')
-            }
-            thumbColor={colors.surface}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            value={isPremium}
-          />
-        </View>
-        <View style={styles.featureList}>
-          {PREMIUM_FEATURES.map((feature) => (
-            <PremiumBadge key={feature} label={feature} />
-          ))}
         </View>
       </Card>
 
       <Card style={styles.actions}>
-        <SettingsAction
-          icon="refresh-outline"
-          title="Restore purchases"
-          text="Apple purchase restore placeholder."
-        />
         <SettingsAction
           icon="download-outline"
           title="Export data"
@@ -231,18 +128,11 @@ export function SettingsScreen() {
         />
         <SettingsAction
           icon="trash-outline"
-          title="Delete account"
-          text="Connect Firebase Auth account deletion before launch."
+          title="Delete local demo data"
+          text="Use Start fresh demo below to clear local garden data from this device."
           danger
         />
       </Card>
-
-      <PrimaryButton
-        icon="refresh-outline"
-        onPress={() => undefined}
-        title="Restore purchases"
-        variant="secondary"
-      />
 
       <View style={styles.exportBlock}>
         <PrimaryButton
@@ -361,11 +251,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  featureList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
   planUsage: {
     backgroundColor: colors.primarySoft,
     borderRadius: 8,
@@ -381,11 +266,6 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: 15,
     fontWeight: '900',
-  },
-  toggleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 14,
   },
   actions: {
     gap: 18,
@@ -440,23 +320,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 3,
-  },
-  authActions: {
-    gap: 8,
-  },
-  emailPlaceholder: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: 8,
-    gap: 4,
-    padding: 12,
-  },
-  authMessage: {
-    color: colors.primaryDark,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-  authError: {
-    color: colors.danger,
   },
 });

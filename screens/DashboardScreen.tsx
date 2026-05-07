@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
-import { PremiumBadge } from '../components/PremiumBadge';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
@@ -63,7 +62,7 @@ export function DashboardScreen({ navigation }: Props) {
       <Card>
         <View style={styles.sectionHeader}>
           <Text style={styles.cardTitle}>Next 3 tasks</Text>
-          <PremiumBadge label="Smart weather-based tasks" />
+          <Text style={styles.previewLabel}>Free MVP preview</Text>
         </View>
         <View style={styles.taskList}>
           {nextTasks.map((task) => (
@@ -96,7 +95,6 @@ export function DashboardScreen({ navigation }: Props) {
           title="Open Profit Mode"
           variant="secondary"
         />
-        <PremiumBadge label="Profit Mode" />
       </View>
     </Screen>
   );
@@ -151,6 +149,11 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     gap: 10,
+  },
+  previewLabel: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: '800',
   },
   taskList: {
     gap: 12,

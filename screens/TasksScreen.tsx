@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
-import { PremiumBadge } from '../components/PremiumBadge';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
@@ -22,15 +21,14 @@ const priorityColor: Record<Priority, string> = {
 };
 
 export function TasksScreen() {
-  const { addTasks, completeTask, isPremium, profile, setSubscriptionStatus, tasks } =
-    useGarden();
+  const { addTasks, completeTask, profile, tasks } = useGarden();
   const [isGeneratingWeatherTasks, setIsGeneratingWeatherTasks] = useState(false);
   const [weatherTaskMessage, setWeatherTaskMessage] = useState<string | null>(
     null,
   );
 
   async function handleGenerateWeatherTasks() {
-    if (!profile || !isPremium) {
+    if (!profile) {
       return;
     }
 
@@ -60,7 +58,6 @@ export function TasksScreen() {
       />
 
       <Card style={styles.weatherCard}>
-        <PremiumBadge label="Smart weather-based tasks" />
         <View style={styles.modeBox}>
           <Text style={styles.modeLabel}>Task mode</Text>
           <Text style={styles.modeValue}>{getWeatherTaskModeLabel()}</Text>
@@ -69,21 +66,14 @@ export function TasksScreen() {
           Generate watering, wind, and plant protection tasks from your garden
           profile. A real weather endpoint can replace the mock task engine.
         </Text>
-        {isPremium ? (
-          <PrimaryButton
-            icon="partly-sunny-outline"
-            loading={isGeneratingWeatherTasks}
-            onPress={handleGenerateWeatherTasks}
-            title="Generate Smart Tasks"
-            variant="secondary"
-          />
-        ) : (
-          <PrimaryButton
-            icon="lock-closed-outline"
-            onPress={() => setSubscriptionStatus('Premium')}
-            title="Enable Premium Demo"
-          />
-        )}
+        <PrimaryButton
+          disabled={!profile}
+          icon="partly-sunny-outline"
+          loading={isGeneratingWeatherTasks}
+          onPress={handleGenerateWeatherTasks}
+          title={profile ? 'Generate Smart Tasks' : 'Complete onboarding first'}
+          variant="secondary"
+        />
         {weatherTaskMessage ? (
           <Text
             style={[
