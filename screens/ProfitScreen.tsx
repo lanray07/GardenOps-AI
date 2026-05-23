@@ -1,12 +1,16 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
+import { PremiumPaywall } from '../components/PremiumPaywall';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
+import { useGarden } from '../context/GardenContext';
 import { cropProfitData } from '../data/crops';
 import { colors } from '../theme/colors';
 
 export function ProfitScreen() {
+  const { isPremium } = useGarden();
+
   return (
     <Screen>
       <SectionTitle
@@ -14,14 +18,22 @@ export function ProfitScreen() {
         subtitle="Estimate what each crop could cost, yield, resell for, and return."
       />
 
-      <Card style={styles.unlockCard}>
-        <Text style={styles.unlockText}>
-          Free MVP preview. These estimates use sample crop data and do not sell
-          paid digital content.
-        </Text>
-      </Card>
+      {!isPremium ? (
+        <>
+          <PremiumPaywall
+            title="Unlock Profit Mode"
+            text="Compare crop costs, estimated yield, resale value, and profit for beginner-friendly garden crops."
+          />
+          <Card style={styles.unlockCard}>
+            <Text style={styles.unlockText}>
+              Preview crops: Basil, Mint, Lettuce, Tomatoes, and Microgreens.
+              Subscribe to view the full profit table.
+            </Text>
+          </Card>
+        </>
+      ) : null}
 
-      {cropProfitData.map((crop) => (
+      {isPremium ? cropProfitData.map((crop) => (
         <Card key={crop.id} style={styles.cropCard}>
           <View style={styles.cropHeader}>
             <Text style={styles.cropName}>{crop.crop}</Text>
@@ -42,7 +54,7 @@ export function ProfitScreen() {
           </View>
           <Text style={styles.tip}>{crop.careTip}</Text>
         </Card>
-      ))}
+      )) : null}
     </Screen>
   );
 }

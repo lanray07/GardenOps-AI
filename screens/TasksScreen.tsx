@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
+import { PremiumPaywall } from '../components/PremiumPaywall';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
@@ -21,7 +22,7 @@ const priorityColor: Record<Priority, string> = {
 };
 
 export function TasksScreen() {
-  const { addTasks, completeTask, profile, tasks } = useGarden();
+  const { addTasks, completeTask, isPremium, profile, tasks } = useGarden();
   const [isGeneratingWeatherTasks, setIsGeneratingWeatherTasks] = useState(false);
   const [weatherTaskMessage, setWeatherTaskMessage] = useState<string | null>(
     null,
@@ -57,34 +58,42 @@ export function TasksScreen() {
         subtitle="A starter task list for keeping your garden moving each week."
       />
 
-      <Card style={styles.weatherCard}>
-        <View style={styles.modeBox}>
-          <Text style={styles.modeLabel}>Task mode</Text>
-          <Text style={styles.modeValue}>{getWeatherTaskModeLabel()}</Text>
-        </View>
-        <Text style={styles.weatherText}>
-          Generate watering, wind, and plant protection tasks from your garden
-          profile. A real weather endpoint can replace the mock task engine.
-        </Text>
-        <PrimaryButton
-          disabled={!profile}
-          icon="partly-sunny-outline"
-          loading={isGeneratingWeatherTasks}
-          onPress={handleGenerateWeatherTasks}
-          title={profile ? 'Generate Smart Tasks' : 'Complete onboarding first'}
-          variant="secondary"
-        />
-        {weatherTaskMessage ? (
-          <Text
-            style={[
-              styles.weatherMessage,
-              weatherTaskMessage.includes('Could not') && styles.weatherError,
-            ]}
-          >
-            {weatherTaskMessage}
+      {isPremium ? (
+        <Card style={styles.weatherCard}>
+          <View style={styles.modeBox}>
+            <Text style={styles.modeLabel}>Task mode</Text>
+            <Text style={styles.modeValue}>{getWeatherTaskModeLabel()}</Text>
+          </View>
+          <Text style={styles.weatherText}>
+            Generate watering, wind, and plant protection tasks from your garden
+            profile. A real weather endpoint can replace the mock task engine.
           </Text>
-        ) : null}
-      </Card>
+          <PrimaryButton
+            disabled={!profile}
+            icon="partly-sunny-outline"
+            loading={isGeneratingWeatherTasks}
+            onPress={handleGenerateWeatherTasks}
+            title={profile ? 'Generate Smart Tasks' : 'Complete onboarding first'}
+            variant="secondary"
+          />
+          {weatherTaskMessage ? (
+            <Text
+              style={[
+                styles.weatherMessage,
+                weatherTaskMessage.includes('Could not') && styles.weatherError,
+              ]}
+            >
+              {weatherTaskMessage}
+            </Text>
+          ) : null}
+        </Card>
+      ) : (
+        <PremiumPaywall
+          compact
+          title="Unlock smart weather tasks"
+          text="Premium adds mock weather-aware garden jobs now, with a real Weather API integration ready for the next backend pass."
+        />
+      )}
 
       {tasks.map((task) => (
         <Card key={task.id} style={styles.taskCard}>

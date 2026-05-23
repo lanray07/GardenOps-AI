@@ -10,7 +10,7 @@ GardenOps AI is a React Native Expo MVP for planning a garden, generating mock A
 - Firebase JS SDK placeholder for Auth and Firestore
 - AsyncStorage local persistence with optional Firebase sync
 - Expo Image Picker for plant photo selection
-- Local premium demo toggle for monetisation gates
+- Expo IAP for Apple subscription purchases
 - JSON data export through Expo FileSystem and native sharing
 - Mock-first AI planner with optional backend endpoint in `services/openAiGardenApi.ts`
 - Mock-first smart weather tasks with optional backend endpoint in `services/weatherTasksApi.ts`
@@ -58,7 +58,8 @@ powershell -ExecutionPolicy Bypass -File ./scripts/generate-brand-assets.ps1
 - Plant Scanner can choose and preview an image; add Plant ID API analysis in `services/plantScanner.ts`.
 - Account mode is local demo by default and becomes Firebase-ready when Firebase env vars are present.
 - Settings includes a Firebase demo sync sign-in button when Firebase env vars are present.
-- Premium gates are demo-only: one free AI plan, locked Profit Mode, and a Settings toggle for Premium.
+- Premium gates use Apple subscription product IDs from `monetisation.ts`: one free AI plan, locked Profit Mode, and locked smart weather tasks.
+- TODO: Add server-side App Store receipt validation before relying on subscriptions for production revenue enforcement.
 - Settings can export a JSON snapshot with profile, tasks, latest AI plan, profit rows, subscription, and sync status.
 - Add Apple In-App Purchases in `monetisation.ts` and replace the local Settings toggle before launch.
 

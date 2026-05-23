@@ -6,7 +6,8 @@ export const PREMIUM_MONTHLY_PRODUCT_ID =
 export const PREMIUM_YEARLY_PRODUCT_ID =
   'com.gardenopsai.app.premium.yearly';
 
-// TODO: Connect Apple In-App Purchases with StoreKit before submitting a paid version.
+// TODO: Add server-side App Store receipt validation before enforcing premium
+// access for real customer accounts across multiple devices.
 export const PREMIUM_FEATURES = [
   'Unlimited AI plans',
   'Profit Mode',

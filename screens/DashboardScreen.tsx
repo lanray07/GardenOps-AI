@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
+import { PremiumBadge } from '../components/PremiumBadge';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
@@ -14,7 +15,7 @@ import { RootTabParamList } from '../navigation/types';
 type Props = BottomTabScreenProps<RootTabParamList, 'Dashboard'>;
 
 export function DashboardScreen({ navigation }: Props) {
-  const { latestPlan, profile, tasks } = useGarden();
+  const { isPremium, latestPlan, profile, remainingFreePlans, tasks } = useGarden();
   const starterPlan = mockGardenPlans[0];
   const nextTasks = tasks.filter((task) => !task.completed).slice(0, 3);
   const estimatedValue = latestPlan?.estimatedValueGbp ?? starterPlan.monthlyValueGbp;
@@ -62,7 +63,11 @@ export function DashboardScreen({ navigation }: Props) {
       <Card>
         <View style={styles.sectionHeader}>
           <Text style={styles.cardTitle}>Next 3 tasks</Text>
-          <Text style={styles.previewLabel}>Free MVP preview</Text>
+          {isPremium ? (
+            <Text style={styles.previewLabel}>Smart tasks unlocked</Text>
+          ) : (
+            <PremiumBadge label="Smart weather tasks" />
+          )}
         </View>
         <View style={styles.taskList}>
           {nextTasks.map((task) => (
@@ -86,9 +91,14 @@ export function DashboardScreen({ navigation }: Props) {
       <PrimaryButton
         icon="sparkles-outline"
         onPress={() => navigation.navigate('Planner')}
-        title="Generate AI Garden Plan"
+        title={
+          isPremium || remainingFreePlans > 0
+            ? 'Generate AI Garden Plan'
+            : 'Upgrade for More AI Plans'
+        }
       />
       <View style={styles.buttonWithBadge}>
+        {!isPremium ? <PremiumBadge label="Profit Mode" /> : null}
         <PrimaryButton
           icon="stats-chart-outline"
           onPress={() => navigation.navigate('Profit')}

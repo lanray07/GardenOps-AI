@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
 import { FormField } from '../components/FormField';
+import { PremiumPaywall } from '../components/PremiumPaywall';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SegmentedControl } from '../components/SegmentedControl';
@@ -18,8 +19,10 @@ export function PlannerScreen() {
   const {
     aiPlansGenerated,
     canGenerateAIPlan,
+    isPremium,
     latestPlan,
     profile,
+    remainingFreePlans,
     saveGeneratedPlan,
   } = useGarden();
   const [gardenSize, setGardenSize] = useState(
@@ -75,12 +78,14 @@ export function PlannerScreen() {
           <Text style={styles.modeLabel}>Planner mode</Text>
           <Text style={styles.modeValue}>{getPlannerModeLabel()}</Text>
           <Text style={styles.modeNote}>
-            Free MVP preview: generate as many mock plans as needed during review.
+            One starter plan is free. Premium unlocks unlimited AI garden plans.
           </Text>
         </View>
 
         <Text style={styles.limit}>
-          Mock AI plans generated in this install: {aiPlansGenerated}
+          {isPremium
+            ? 'Premium active: unlimited mock AI plans'
+            : `${remainingFreePlans} of 1 free AI plan remaining. ${aiPlansGenerated} generated in this install.`}
         </Text>
 
         <FormField
@@ -128,9 +133,16 @@ export function PlannerScreen() {
           icon="sparkles-outline"
           loading={isLoading}
           onPress={handleGeneratePlan}
-          title="Generate Plan"
+          title={canGenerateAIPlan ? 'Generate Plan' : 'Upgrade for Unlimited Plans'}
         />
       </Card>
+
+      {!canGenerateAIPlan ? (
+        <PremiumPaywall
+          title="Unlock unlimited plans"
+          text="Keep generating new crop layouts, schedules, and value estimates as your garden changes."
+        />
+      ) : null}
 
       {plan ? (
         <Card style={styles.resultCard}>

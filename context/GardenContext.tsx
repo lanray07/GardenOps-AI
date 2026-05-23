@@ -7,7 +7,14 @@ import {
   useMemo,
   useState,
 } from 'react';
+import {
+  deepLinkToSubscriptions,
+  finishTransaction as finishIapTransaction,
+  useIAP,
+  type Purchase,
+} from 'expo-iap';
 
+import { FREE_PLAN_LIMIT, PREMIUM_MONTHLY_PRODUCT_ID } from '../monetisation';
 import { mockTasks } from '../data/tasks';
 import {
   canUseFirebaseAuth,
@@ -24,6 +31,16 @@ import {
   saveGardenStateToCloud,
   saveGardenStateToDevice,
 } from '../services/gardenStorage';
+import {
+  buildPremiumPlanOptions,
+  getProductIdForPlan,
+  getPurchaseErrorMessage,
+  isPremiumProductId,
+  PREMIUM_PLAN_PRODUCT_IDS,
+  PremiumPlanKey,
+  PremiumPlanOption,
+  PurchaseStatus,
+} from '../services/iap';
 import {
   AIPlannerResult,
   AuthStatus,
@@ -44,6 +61,9 @@ interface GardenContextValue {
   remainingFreePlans: number;
   isPremium: boolean;
   canGenerateAIPlan: boolean;
+  premiumPlans: PremiumPlanOption[];
+  purchaseStatus: PurchaseStatus;
+  purchaseMessage: string | null;
   isHydrated: boolean;
   syncStatus: SyncStatus;
   authStatus: AuthStatus;
@@ -53,6 +73,10 @@ interface GardenContextValue {
   completeTask: (taskId: string) => void;
   addTasks: (newTasks: GardenTask[]) => void;
   setSubscriptionStatus: (status: SubscriptionStatus) => void;
+  purchasePremiumPlan: (plan: PremiumPlanKey) => Promise<void>;
+  restorePremiumPurchases: () => Promise<void>;
+  refreshPurchaseEntitlements: () => Promise<void>;
+  openSubscriptionManagement: () => Promise<void>;
   signInDemoAccount: () => Promise<void>;
   signOutAccount: () => Promise<void>;
   resetGarden: () => Promise<void>;
@@ -69,10 +93,68 @@ export function GardenProvider({ children }: { children: ReactNode }) {
   const [aiPlansGenerated, setAiPlansGenerated] = useState(0);
   const [isHydrated, setIsHydrated] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local-only');
+  const [purchaseStatus, setPurchaseStatus] =
+    useState<PurchaseStatus>('loading');
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<AuthUserSummary | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>(
     canUseFirebaseAuth() ? 'signed-out' : 'local-demo',
   );
+
+  const handlePurchaseSuccess = useCallback(async (purchase: Purchase) => {
+    if (!isPremiumProductId(purchase.productId)) {
+      return;
+    }
+
+    setSubscriptionStatus('Premium');
+    setPurchaseStatus('idle');
+    setPurchaseMessage('Premium is active. Thanks for supporting GardenOps AI.');
+
+    try {
+      // TODO: Verify the App Store transaction on a trusted backend before
+      // finishing it in a production subscription release.
+      await finishIapTransaction({ purchase, isConsumable: false });
+    } catch {
+      setPurchaseMessage(
+        'Premium is active, but the App Store transaction still needs to finish.',
+      );
+    }
+  }, []);
+
+  const handlePurchaseError = useCallback((error: unknown) => {
+    const message = getPurchaseErrorMessage(error);
+    const loweredMessage = message.toLowerCase();
+
+    setPurchaseStatus(loweredMessage.includes('cancel') ? 'idle' : 'error');
+    setPurchaseMessage(
+      loweredMessage.includes('cancel')
+        ? 'Purchase cancelled.'
+        : message,
+    );
+  }, []);
+
+  const handleStoreError = useCallback((error: Error) => {
+    setPurchaseStatus('error');
+    setPurchaseMessage(getPurchaseErrorMessage(error));
+  }, []);
+
+  const {
+    activeSubscriptions,
+    availablePurchases,
+    connected,
+    fetchProducts,
+    getActiveSubscriptions,
+    getAvailablePurchases,
+    hasActiveSubscriptions,
+    reconnect,
+    requestPurchase,
+    restorePurchases,
+    subscriptions,
+  } = useIAP({
+    onError: handleStoreError,
+    onPurchaseError: handlePurchaseError,
+    onPurchaseSuccess: handlePurchaseSuccess,
+  });
 
   const applyState = useCallback((state: PersistedGardenState) => {
     setProfile(state.profile);
@@ -224,11 +306,161 @@ export function GardenProvider({ children }: { children: ReactNode }) {
     setSyncStatus('local-only');
   }, []);
 
+  const premiumPlans = useMemo(
+    () => buildPremiumPlanOptions(subscriptions),
+    [subscriptions],
+  );
+
+  const refreshPurchaseEntitlements = useCallback(async () => {
+    if (!connected) {
+      setPurchaseStatus('unavailable');
+      return;
+    }
+
+    setPurchaseStatus('loading');
+    setPurchaseMessage(null);
+
+    try {
+      await fetchProducts({
+        skus: PREMIUM_PLAN_PRODUCT_IDS,
+        type: 'subs',
+      });
+      const hasPremium = await hasActiveSubscriptions(PREMIUM_PLAN_PRODUCT_IDS);
+      await getActiveSubscriptions(PREMIUM_PLAN_PRODUCT_IDS);
+      await getAvailablePurchases({
+        onlyIncludeActiveItemsIOS: true,
+      });
+
+      setSubscriptionStatus(hasPremium ? 'Premium' : 'Free');
+      setPurchaseStatus('idle');
+    } catch {
+      setPurchaseStatus('error');
+      setPurchaseMessage(
+        'App Store purchases are temporarily unavailable. Please try again shortly.',
+      );
+    }
+  }, [
+    connected,
+    fetchProducts,
+    getActiveSubscriptions,
+    getAvailablePurchases,
+    hasActiveSubscriptions,
+  ]);
+
+  useEffect(() => {
+    refreshPurchaseEntitlements();
+  }, [refreshPurchaseEntitlements]);
+
+  useEffect(() => {
+    const hasActiveSubscription = activeSubscriptions.some(
+      (subscription) =>
+        subscription.isActive && isPremiumProductId(subscription.productId),
+    );
+    const hasAvailablePurchase = availablePurchases.some(
+      (purchase) =>
+        purchase.purchaseState === 'purchased' &&
+        isPremiumProductId(purchase.productId),
+    );
+
+    if (hasActiveSubscription || hasAvailablePurchase) {
+      setSubscriptionStatus('Premium');
+      setPurchaseStatus('idle');
+    }
+  }, [activeSubscriptions, availablePurchases]);
+
+  const purchasePremiumPlan = useCallback(
+    async (plan: PremiumPlanKey) => {
+      const productId = getProductIdForPlan(plan);
+
+      setPurchaseStatus('purchasing');
+      setPurchaseMessage(null);
+
+      try {
+        const isReady = connected || (await reconnect());
+
+        if (!isReady) {
+          setPurchaseStatus('unavailable');
+          setPurchaseMessage(
+            'The App Store purchase sheet is not available yet. Please try again.',
+          );
+          return;
+        }
+
+        await requestPurchase({
+          request: {
+            apple: {
+              sku: productId,
+            },
+            google: {
+              skus: [productId],
+            },
+          },
+          type: 'subs',
+        });
+        setPurchaseMessage('Confirm the subscription in the App Store sheet.');
+      } catch (error) {
+        setPurchaseStatus('error');
+        setPurchaseMessage(getPurchaseErrorMessage(error));
+      }
+    },
+    [connected, reconnect, requestPurchase],
+  );
+
+  const restorePremiumPurchases = useCallback(async () => {
+    setPurchaseStatus('restoring');
+    setPurchaseMessage(null);
+
+    try {
+      const isReady = connected || (await reconnect());
+
+      if (!isReady) {
+        setPurchaseStatus('unavailable');
+        setPurchaseMessage(
+          'The App Store is not available yet. Please try restoring again.',
+        );
+        return;
+      }
+
+      await restorePurchases({
+        onlyIncludeActiveItemsIOS: true,
+      });
+      const hasPremium = await hasActiveSubscriptions(PREMIUM_PLAN_PRODUCT_IDS);
+      await getActiveSubscriptions(PREMIUM_PLAN_PRODUCT_IDS);
+
+      setSubscriptionStatus(hasPremium ? 'Premium' : 'Free');
+      setPurchaseStatus('idle');
+      setPurchaseMessage(
+        hasPremium
+          ? 'Premium purchase restored.'
+          : 'No active GardenOps AI subscription was found for this Apple ID.',
+      );
+    } catch (error) {
+      setPurchaseStatus('error');
+      setPurchaseMessage(getPurchaseErrorMessage(error));
+    }
+  }, [
+    connected,
+    getActiveSubscriptions,
+    hasActiveSubscriptions,
+    reconnect,
+    restorePurchases,
+  ]);
+
+  const openSubscriptionManagement = useCallback(async () => {
+    try {
+      await deepLinkToSubscriptions({
+        packageNameAndroid: 'com.gardenopsai.app',
+        skuAndroid: PREMIUM_MONTHLY_PRODUCT_ID,
+      });
+    } catch (error) {
+      setPurchaseStatus('error');
+      setPurchaseMessage(getPurchaseErrorMessage(error));
+    }
+  }, []);
+
   const isPremium = subscriptionStatus === 'Premium';
-  const remainingFreePlans = 0;
-  // App Store review build: all mock MVP planning tools are free to use.
-  // TODO: Reintroduce plan limits only after Apple In-App Purchases are live.
-  const canGenerateAIPlan = true;
+  const remainingFreePlans = Math.max(FREE_PLAN_LIMIT - aiPlansGenerated, 0);
+  const canGenerateAIPlan = isPremium || remainingFreePlans > 0;
 
   const value = useMemo(
     () => ({
@@ -240,6 +472,9 @@ export function GardenProvider({ children }: { children: ReactNode }) {
       remainingFreePlans,
       isPremium,
       canGenerateAIPlan,
+      premiumPlans,
+      purchaseStatus,
+      purchaseMessage,
       isHydrated,
       syncStatus,
       authStatus,
@@ -270,6 +505,10 @@ export function GardenProvider({ children }: { children: ReactNode }) {
         });
       },
       setSubscriptionStatus,
+      purchasePremiumPlan,
+      restorePremiumPurchases,
+      refreshPurchaseEntitlements,
+      openSubscriptionManagement,
       signInDemoAccount,
       signOutAccount,
       resetGarden,
@@ -282,9 +521,16 @@ export function GardenProvider({ children }: { children: ReactNode }) {
       isHydrated,
       isPremium,
       latestPlan,
+      openSubscriptionManagement,
       profile,
+      premiumPlans,
+      purchaseMessage,
+      purchasePremiumPlan,
+      purchaseStatus,
+      refreshPurchaseEntitlements,
       remainingFreePlans,
       resetGarden,
+      restorePremiumPurchases,
       signInDemoAccount,
       signOutAccount,
       subscriptionStatus,

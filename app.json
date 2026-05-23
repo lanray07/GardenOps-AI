@@ -2,13 +2,14 @@
   "expo": {
     "name": "GardenOps AI",
     "slug": "gardenops-ai",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "gardenopsai",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [
+      "expo-iap",
       [
         "expo-image-picker",
         {
@@ -24,7 +25,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gardenopsai.app",
-      "buildNumber": "1.0.3",
+      "buildNumber": "1.0.4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "GardenOps AI uses your selected plant photo to preview plant scanner results."

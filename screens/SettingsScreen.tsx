@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../components/Card';
+import { PremiumPaywall } from '../components/PremiumPaywall';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { SectionTitle } from '../components/SectionTitle';
@@ -16,8 +17,12 @@ export function SettingsScreen() {
   const {
     aiPlansGenerated,
     authStatus,
+    isPremium,
     latestPlan,
+    openSubscriptionManagement,
     profile,
+    purchaseStatus,
+    refreshPurchaseEntitlements,
     resetGarden,
     subscriptionStatus,
     syncStatus,
@@ -103,14 +108,18 @@ export function SettingsScreen() {
       <Card style={styles.subscriptionCard}>
         <View style={styles.subscriptionTop}>
           <View>
-            <Text style={styles.label}>Launch access</Text>
-            <Text style={styles.status}>Free MVP</Text>
+            <Text style={styles.label}>Subscription status</Text>
+            <Text style={styles.status}>{subscriptionStatus}</Text>
           </View>
-          <Ionicons name="checkmark-circle-outline" color={colors.primary} size={28} />
+          <Ionicons
+            name={isPremium ? 'checkmark-circle-outline' : 'lock-closed-outline'}
+            color={colors.primary}
+            size={28}
+          />
         </View>
         <Text style={styles.muted}>
-          This review build is free. All mock planning, task, scanner, and profit
-          tools are available without purchase.
+          Premium unlocks unlimited AI garden plans, Profit Mode, and smart
+          weather-based tasks through Apple In-App Purchases.
         </Text>
         <View style={styles.planUsage}>
           <Text style={styles.usageLabel}>AI plans generated</Text>
@@ -118,7 +127,31 @@ export function SettingsScreen() {
             {aiPlansGenerated} generated in this install
           </Text>
         </View>
+        {isPremium ? (
+          <View style={styles.subscriptionActions}>
+            <PrimaryButton
+              icon="open-outline"
+              onPress={openSubscriptionManagement}
+              title="Manage subscription"
+              variant="secondary"
+            />
+            <PrimaryButton
+              icon="refresh-outline"
+              loading={purchaseStatus === 'loading'}
+              onPress={refreshPurchaseEntitlements}
+              title="Refresh access"
+              variant="secondary"
+            />
+          </View>
+        ) : null}
       </Card>
+
+      {!isPremium ? (
+        <PremiumPaywall
+          title="Upgrade to Premium"
+          text="Buy or restore GardenOps AI Premium to unlock the paid garden planning tools."
+        />
+      ) : null}
 
       <Card style={styles.actions}>
         <SettingsAction
@@ -256,6 +289,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 4,
     padding: 12,
+  },
+  subscriptionActions: {
+    gap: 10,
   },
   usageLabel: {
     color: colors.muted,
